@@ -1,3 +1,5 @@
+import heapq
+
 class FES:
     def __init__(self):
         self.events = []
