@@ -10,4 +10,4 @@ class Customer:
     def __init__(self, arrTime, arrStation):
         self.arrTime = arrTime
         self.arrStation = arrStation
-        self.deptStation = choices([0, 1, 2, 3], weights=self.departureProbs[arrStation])
+        self.deptStation = choices([0, 1, 2, 3], weights=self.departureProbs[arrStation])[0]
