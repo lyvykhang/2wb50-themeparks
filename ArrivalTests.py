@@ -15,25 +15,29 @@ import time
 # Array for projected customer arrival per hour for stations
 frogPondArr = [450, 300, 275, 285, 310, 320, 280, 260, 290, 315, 385, 415]
 
+def lam(t, stationArr):
+    return stationArr[int(t/60)]/60
+
 def simArrival(stationArr, T):
     # Function to do Poisson process to get arrival times for simulation
-
-    lam = (mean(stationArr))/60
+    lambdaMax = (max(stationArr))/60
 
     arrivalTimes = deque()
-    expDist = stats.expon(scale=1/lam)
+    expDist = stats.expon(scale=1/lambdaMax)
+    udist = stats.uniform(0, 1)
     t = expDist.rvs()
 
     while t < T:
-        arrivalTimes.append(t)
+        if udist.rvs() < lam(t, stationArr)/lambdaMax:
+            arrivalTimes.append(t)
         t += expDist.rvs()
 
     return asarray(arrivalTimes)
 
-def thinning(allArrivals, stationArr):
-    # Function to make the Poisson process non-homogeneous matching the projected customer arrival per hour
-    stationArr = [x / max(stationArr) for x in stationArr]
-    return [(stationArr[int(t/60)]) for t in allArrivals]
+# def thinning(allArrivals, stationArr):
+#     # Function to make the Poisson process non-homogeneous matching the projected customer arrival per hour
+#     stationArr = [x / max(stationArr) for x in stationArr]
+#     return [(stationArr[int(t/60)]) for t in allArrivals]
 
 def generatePlot(arr):
     # Generate plot mostly copied from lecture notes
@@ -47,16 +51,17 @@ def generatePlot(arr):
     plt.clf()
 
 T = 720
-# All Arrivals is homogeneous
-allArrivals = simArrival(frogPondArr, T)
+# # All Arrivals is homogeneous
+# allArrivals = simArrival(frogPondArr, T)
 
-# The next steps are here to make it non-homogeneous
-udist = stats.uniform(0, 1)
-u = udist.rvs(len(allArrivals))
-maxLam = 1 # I am unsure what this value should be currently, it heavily impacts the amount of accepted arrivals
-accept = u * maxLam < thinning(allArrivals, frogPondArr)
-acceptedArrivals = allArrivals[accept]
+# # The next steps are here to make it non-homogeneous
+# udist = stats.uniform(0, 1)
+# u = udist.rvs(len(allArrivals))
+# maxLam = 1 # I am unsure what this value should be currently, it heavily impacts the amount of accepted arrivals
+# accept = u * maxLam < thinning(allArrivals, frogPondArr)
+# acceptedArrivals = allArrivals[accept]
+acceptedArrivals = simArrival(frogPondArr, T)
 
-generatePlot(allArrivals)
+# generatePlot(allArrivals)
 time.sleep(1)
 generatePlot(acceptedArrivals)
