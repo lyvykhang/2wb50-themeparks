@@ -1,4 +1,12 @@
+from collections import deque
+from scipy import stats
 import numpy as np
+
+from FES import FES
+from Train import Train
+from Event import Event
+from SimResults import SimResults
+from Customer import Customer
 
 class Sim:
     travelTimes = [5, 8, 7, 6]
@@ -43,7 +51,7 @@ class Sim:
             for arr in self.simArrival(station, 720):
                 fes.add(Event(Event.ARRIVAL_CUST, arr, idx, cust=Customer(arr, idx)))
 
-        while(t < 720): # 60 minutes * 12 hours - placeholder: eventually this will be changed to "until the system is empty of customers"
+        while(True): # Run untill break clause is triggered
             e = fes.next()
             t_old = t
             t = e.time
@@ -56,7 +64,7 @@ class Sim:
                 cust = e.cust
                 qCust[e.station].append(cust)
 
-                if (len(qTrain[e.station]) > 0): # there is a train at the platform.
+                if (len(qTrain[e.station]) > 0 and t < 720): # there is a train at the platform and t is less than 720
                     train = qTrain[e.station][0]
                     if (qCust[e.station][0] == cust and len(train.custs) < train.capacity): # customer is at head of q and train is not full.
                         train.custs.append(cust) # then they can immediately board the train.
@@ -66,7 +74,7 @@ class Sim:
                 cust = e.cust
                 qCust[e.station].remove(cust)
                 
-                if (len(qCust[e.station]) > 0): # there are still customers in the queue.
+                if (len(qCust[e.station]) > 0 and t < 720): # there are still customers in the queue and t is less than 720
                     nextCust = qCust[e.station][0]
                     if (len(qTrain[e.station]) > 0):
                         train = qTrain[e.station][0]
@@ -84,11 +92,13 @@ class Sim:
                     off = [cust for cust in train.custs if cust.deptStation == e.station] # offload customers who want to get off at this station.
                     train.custs = [cust for cust in train.custs if cust not in off]
 
-                    remainingCapacity = train.capacity - len(train.custs)
-                    on = [cust for cust in qCust[e.station][:remainingCapacity]] # fill train to min(current q length, remaining capacity).
-                    for cust in on:
-                        train.custs.append(cust)
-                        qCust[e.station].remove(cust)
+                    if t < 720: # do not fill if t is not less than 720
+                        remainingCapacity = train.capacity - len(train.custs)
+                        on = [cust for cust in qCust[e.station][:remainingCapacity]] # fill train to min(current q length, remaining capacity).
+                        for cust in on:
+                            train.custs.append(cust)
+                            qCust[e.station].remove(cust)
+                            
                     fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=train))
 
             elif (e.type == Event.DEPARTURE_TRAIN):
@@ -101,11 +111,23 @@ class Sim:
                     off = [cust for cust in nextTrain.custs if cust.deptStation == e.station]
                     nextTrain.custs = [cust for cust in nextTrain.custs if cust not in off]
 
-                    remainingCapacity = nextTrain.capacity - len(nextTrain.custs)
-                    on = [cust for cust in qCust[e.station][:remainingCapacity]]
-                    for cust in on:
-                        nextTrain.custs.append(cust)
-                        qCust[e.station].remove(cust)
+                    if t < 720: # do not fill if t is not less than 720
+                        remainingCapacity = nextTrain.capacity - len(nextTrain.custs)
+                        on = [cust for cust in qCust[e.station][:remainingCapacity]]
+                        for cust in on:
+                            nextTrain.custs.append(cust)
+                            qCust[e.station].remove(cust)
+
                     fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=nextTrain))
+
+            # If t is after 720 check if all trains are empty
+            if (t > 720):
+                done = True
+                for train in trains:
+                    if (len(train.custs) > 0):
+                        done = False
+                        break # break for loop
+                if done:
+                    break # break while loop
             
         return results

@@ -12,4 +12,4 @@ class Event:
         self.cust = cust
     
     def __lt__(self, other):
-        return self.arrTime < other.arrTime
+        return self.time < other.time
