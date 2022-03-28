@@ -64,6 +64,7 @@ class Sim:
                     train = qTrain[e.station][0]
                     if (qCust[e.station][0] == cust and len(train.custs) < train.capacity): # customer is at head of q and train is not full.
                         train.custs.append(cust) # then they can immediately board the train.
+                        results.registerWaitingTime(cust, t)
                         fes.add(Event(Event.DEPARTURE_CUST, t, e.station, cust=cust))
 
             elif (e.type == Event.DEPARTURE_CUST):
@@ -77,6 +78,7 @@ class Sim:
                         if (len(train.custs) < train.capacity):
                             train.custs.append(nextCust)
                             qCust[e.station].remove(nextCust)
+                            results.registerWaitingTime(nextCust, t)
                             fes.add(Event(Event.DEPARTURE_CUST, t, e.station, cust=nextCust))
 
             elif (e.type == Event.ARRIVAL_TRAIN):
@@ -94,12 +96,15 @@ class Sim:
                         for cust in on:
                             train.custs.append(cust)
                             qCust[e.station].remove(cust)
+                            results.registerWaitingTime(cust, t)
+                        results.registerQLength(len(qCust[e.station]), t, e.station)
                             
                     fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=train))
 
             elif (e.type == Event.DEPARTURE_TRAIN):
                 train = e.train
                 qTrain[e.station].remove(train)
+                results.registerUnableToBoard(len(qCust[e.station])>0)
                 fes.add(Event(Event.ARRIVAL_TRAIN, t + self.travelTimes[e.station], (e.station + 1) % 4, train=train))
 
                 if len(qTrain[e.station]) > 0: # there is another train waiting to offload at this station.
@@ -113,11 +118,13 @@ class Sim:
                         for cust in on:
                             nextTrain.custs.append(cust)
                             qCust[e.station].remove(cust)
-
+                            results.registerWaitingTime(cust, t)
+                        results.registerQLength(len(qCust[e.station]), t, e.station)
+                        
                     fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=nextTrain))
                     
-            if (t != t_old):
-                results.registerQLength(value=len(qCust[e.station]), t=t, station=e.station)
+            if ((e.type == Event.ARRIVAL_CUST or e.type == Event.DEPARTURE_CUST) and t != t_old):
+                results.registerQLength(len(qCust[e.station]), t, e.station)
 
             # If t is after 720 check if all trains are empty
             if (t > 720):
