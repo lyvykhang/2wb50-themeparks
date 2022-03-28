@@ -55,10 +55,6 @@ class Sim:
             e = fes.next()
             t_old = t
             t = e.time
-            if ((e.type == Event.ARRIVAL_CUST or e.type == Event.DEPARTURE_CUST) and t != t_old): # register queue length every time cust arrival/departure events occur...
-            # ... since only these impact queue length.
-                for i in range(4):
-                    results.registerQLength(len(qCust[i]), i)
 
             if (e.type == Event.ARRIVAL_CUST):
                 cust = e.cust
@@ -119,6 +115,9 @@ class Sim:
                             qCust[e.station].remove(cust)
 
                     fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=nextTrain))
+                    
+            if (t != t_old):
+                results.registerQLength(value=len(qCust[e.station]), t=t, station=e.station)
 
             # If t is after 720 check if all trains are empty
             if (t > 720):
