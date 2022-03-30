@@ -1,8 +1,7 @@
 class Event:
     ARRIVAL_CUST = 0
-    DEPARTURE_CUST = 1
-    ARRIVAL_TRAIN = 2
-    DEPARTURE_TRAIN = 3
+    ARRIVAL_TRAIN = 1
+    DEPARTURE_TRAIN = 2
 
     def __init__(self, typ, time, station, train=None, cust=None):
         self.type = typ
