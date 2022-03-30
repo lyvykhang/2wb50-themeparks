@@ -53,7 +53,6 @@ class Sim:
 
         while(True): # Run untill break clause is triggered
             e = fes.next()
-            t_old = t
             t = e.time
 
             if (e.type == Event.ARRIVAL_CUST):
@@ -64,22 +63,10 @@ class Sim:
                     train = qTrain[e.station][0]
                     if (qCust[e.station][0] == cust and len(train.custs) < train.capacity): # customer is at head of q and train is not full.
                         train.custs.append(cust) # then they can immediately board the train.
+                        qCust[e.station].remove(cust)
                         results.registerWaitingTime(cust, t)
-                        fes.add(Event(Event.DEPARTURE_CUST, t, e.station, cust=cust))
 
-            elif (e.type == Event.DEPARTURE_CUST):
-                cust = e.cust
-                qCust[e.station].remove(cust)
-                
-                if (len(qCust[e.station]) > 0 and t < 720): # there are still customers in the queue and t is less than 720
-                    nextCust = qCust[e.station][0]
-                    if (len(qTrain[e.station]) > 0):
-                        train = qTrain[e.station][0]
-                        if (len(train.custs) < train.capacity):
-                            train.custs.append(nextCust)
-                            qCust[e.station].remove(nextCust)
-                            results.registerWaitingTime(nextCust, t)
-                            fes.add(Event(Event.DEPARTURE_CUST, t, e.station, cust=nextCust))
+                results.registerQLength(len(qCust[e.station]), t, e.station)
 
             elif (e.type == Event.ARRIVAL_TRAIN):
                 train = e.train
@@ -92,15 +79,15 @@ class Sim:
 
                     if t < 720: # do not fill if t is not less than 720
                         remainingCapacity = train.capacity - len(train.custs)
-                        on = [cust for cust in qCust[e.station][:remainingCapacity]] # fill train to min(current q length, remaining capacity).
+                        on = qCust[e.station][:remainingCapacity] # fill train to min(current q length, remaining capacity).
                         for cust in on:
                             train.custs.append(cust)
                             qCust[e.station].remove(cust)
                             results.registerWaitingTime(cust, t)
-                        results.registerQLength(len(qCust[e.station]), t, e.station)
-                            
-                    fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=train))
+                        results.registerQLength(len(qCust[e.station]), t, e.station) 
 
+                    fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=train))
+                    
             elif (e.type == Event.DEPARTURE_TRAIN):
                 train = e.train
                 qTrain[e.station].remove(train)
@@ -114,17 +101,14 @@ class Sim:
 
                     if t < 720: # do not fill if t is not less than 720
                         remainingCapacity = nextTrain.capacity - len(nextTrain.custs)
-                        on = [cust for cust in qCust[e.station][:remainingCapacity]]
+                        on = qCust[e.station][:remainingCapacity]
                         for cust in on:
                             nextTrain.custs.append(cust)
                             qCust[e.station].remove(cust)
                             results.registerWaitingTime(cust, t)
                         results.registerQLength(len(qCust[e.station]), t, e.station)
-                        
+
                     fes.add(Event(Event.DEPARTURE_TRAIN, t + 2, e.station, train=nextTrain))
-                    
-            if ((e.type == Event.ARRIVAL_CUST or e.type == Event.DEPARTURE_CUST) and t != t_old):
-                results.registerQLength(len(qCust[e.station]), t, e.station)
 
             # If t is after 720 check if all trains are empty
             if (t > 720):
