@@ -1,14 +1,25 @@
 from Sim import Sim
 import numpy as np
+import pandas as pd
 from scipy.stats import t
 from timeit import default_timer as timer
 
-# sim = Sim()
-# results = sim.sim(8, [2,2,2,2,2,2,2,2])
-# print([np.mean(subarray) for subarray in results.qLengths])
-# print([np.mean(subarray) for subarray in results.waitingTimes])
-#print([np.mean(subarray) for subarray in results.qLengths])
-#print(results.waitingTimes)
+def dfToLatex(df, caption):
+    df.columns = ['Train configuration', 'Mean Que Length', 'Mean Waiting Time', 'Costs']
+    print("\\begin{table}[h!]")
+    print("\\resizebox{\textwidth}{!}{")
+    print(df.to_latex())
+    print("}")
+    print(f"\\caption{{{caption}}}")
+    print("\\end{table}")
+
+def doRun(trains, cars):
+    sim = Sim()
+    results = sim.sim(trains, cars)
+    meanQLength = np.mean([qLength for station in results.qLengths for qLength in station])
+    meanWaitTime = np.mean([waitTime for station in results.waitingTimes for waitTime in station])
+    costs = (800*trains) + (sum(cars)*500)
+    return [cars, meanQLength, meanWaitTime, costs]
 
 def getConfidenceInterval(array):
     confidence = 0.95
@@ -50,6 +61,15 @@ def doRuns(N, trains, cars):
         print(np.mean(waitingTimes))
         print(getConfidenceInterval(waitingTimes))
 
-start = timer()
-doRuns(3, 8, [2,2,2,2,2,2,2,2])
-print(timer() - start)
+df = pd.DataFrame(columns=['Train configuration', 'Mean Que Length', 'Mean Waiting Time', 'Costs'])
+for i in range(6, 13):
+    run = doRun(i, np.full(i, 1))
+    df = df.append({"Train configuration": ', '.join(str(i) for i in run[0]), "Mean Que Length": run[1], "Mean Waiting Time": run[2], "Costs": run[3]}, ignore_index=True)
+    run = doRun(i, np.full(i, 2))
+    df = df.append({"Train configuration": ', '.join(str(i) for i in run[0]), "Mean Que Length": run[1], "Mean Waiting Time": run[2], "Costs": run[3]}, ignore_index=True)
+    run = doRun(i, np.full(i, 3))
+    df = df.append({"Train configuration": ', '.join(str(i) for i in run[0]), "Mean Que Length": run[1], "Mean Waiting Time": run[2], "Costs": run[3]}, ignore_index=True)
+print(df.to_string())
+dfToLatex(df, "Different configurations of trains and cars for explorative research, using a single number of simulation runs")
+
+# For the picked configuration we should do doRuns() to get a confidence interval
