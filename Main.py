@@ -13,12 +13,15 @@ def dfToLatex(df, caption):
     print(f"\\caption{{{caption}}}")
     print("\\end{table}")
 
-def doRun(trains, cars):
+def doRun(trains, cars, extra=None):
     sim = Sim()
-    results = sim.sim(trains, cars, extra=0)
+    results = sim.sim(trains, cars, extra)
     meanQLength = np.mean([qLength for station in results.qLengths for qLength in station])
     meanWaitTime = np.mean([waitTime for station in results.waitingTimes for waitTime in station])
-    costs = (800*trains) + (sum(cars)*500)
+    if extra:
+        costs = (800*trains) + (sum(cars)*520)
+    else: 
+        costs = (800*trains) + (sum(cars)*500)
     return [cars, meanQLength, meanWaitTime, costs]
 
 def getConfidenceInterval(array):
@@ -40,7 +43,7 @@ def doRuns(N, trains, cars):
     
     for i in range(N):
         sim = Sim()
-        results = sim.sim(trains, cars, extra=0)
+        results = sim.sim(trains, cars, extra=1)
         runsQLengths.append(results.qLengths)
         runsMeanQLengths.append([np.mean(subarray) for subarray in results.qLengths])
 
@@ -63,11 +66,11 @@ def doRuns(N, trains, cars):
 
 df = pd.DataFrame(columns=['Train configuration', 'Mean Que Length', 'Mean Waiting Time', 'Costs'])
 for i in range(6, 13):
-    run = doRun(i, np.full(i, 1))
+    run = doRun(i, np.full(i, 1), 1)
     df = df.append({"Train configuration": ', '.join(str(i) for i in run[0]), "Mean Que Length": run[1], "Mean Waiting Time": run[2], "Costs": run[3]}, ignore_index=True)
-    run = doRun(i, np.full(i, 2))
+    run = doRun(i, np.full(i, 2), 1)
     df = df.append({"Train configuration": ', '.join(str(i) for i in run[0]), "Mean Que Length": run[1], "Mean Waiting Time": run[2], "Costs": run[3]}, ignore_index=True)
-    run = doRun(i, np.full(i, 3))
+    run = doRun(i, np.full(i, 3), 1)
     df = df.append({"Train configuration": ', '.join(str(i) for i in run[0]), "Mean Que Length": run[1], "Mean Waiting Time": run[2], "Costs": run[3]}, ignore_index=True)
 print(df.to_string())
 dfToLatex(df, "Different configurations of trains and cars for explorative research, using a single number of simulation runs")

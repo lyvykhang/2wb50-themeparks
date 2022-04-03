@@ -50,7 +50,7 @@ class Sim:
     
         for train in trains: # schedule initial train "arrivals".
             if extra:
-                fes.add(Event(Event.ARRIVAL_TRAIN_ON, t, train.station, train=train))
+                fes.add(Event(Event.ARRIVAL_TRAIN_OFF, t, train.station, train=train))
             else:
                 fes.add(Event(Event.ARRIVAL_TRAIN, t, train.station, train=train))
 
@@ -128,7 +128,7 @@ class Sim:
                             if train.boarding:
                                 train.custs.append(cust) # then they can immediately board the train.
                                 qCust[e.station].remove(cust)
-                            results.registerWaitingTime(cust, t)
+                                results.registerWaitingTime(cust, t)
 
                     results.registerQLength(len(qCust[e.station]), t, e.station)
 
@@ -142,13 +142,12 @@ class Sim:
                         off = [cust for cust in train.custs if cust.deptStation == e.station] # offload customers who want to get off at this station.
                         train.custs = [cust for cust in train.custs if cust not in off]
 
-                    fes.add(Event(Event.ARRIVAL_TRAIN_ON, t + 0.5, e.station, train=train))
+                        fes.add(Event(Event.ARRIVAL_TRAIN_ON, t + 0.5, e.station, train=train))
 
                 elif (e.type == Event.ARRIVAL_TRAIN_ON):
                     train = e.train
                     train.station = e.station
                     train.boarding = True;
-                    qTrain[e.station].append(train)
 
                     if t < 720: # do not fill if t is not less than 720
                         remainingCapacity = train.capacity - len(train.custs)
@@ -166,21 +165,13 @@ class Sim:
                     train.boarding = False;
                     qTrain[e.station].remove(train)
                     results.registerUnableToBoard(len(qCust[e.station])>0)
-                    fes.add(Event(Event.ARRIVAL_TRAIN_OFF, t + self.travelTimes[e.station], (e.station + 1) % 4, train=train))
-
+                    
                     if len(qTrain[e.station]) > 0: # there is another train waiting to offload at this station.
                         nextTrain = qTrain[e.station][0]
+                        fes.add(Event(Event.ARRIVAL_TRAIN_OFF, t + self.travelTimes[e.station], (e.station + 1) % 4, train=train))
+
                         off = [cust for cust in nextTrain.custs if cust.deptStation == e.station]
                         nextTrain.custs = [cust for cust in nextTrain.custs if cust not in off]
-
-                        if t < 720: # do not fill if t is not less than 720
-                            remainingCapacity = nextTrain.capacity - len(nextTrain.custs)
-                            on = qCust[e.station][:remainingCapacity]
-                            for cust in on:
-                                nextTrain.custs.append(cust)
-                                qCust[e.station].remove(cust)
-                                results.registerWaitingTime(cust, t)
-                            results.registerQLength(len(qCust[e.station]), t, e.station)
 
                         #schedule the arrival of the train waiting in the queue at that station 30s later
                         fes.add(Event(Event.ARRIVAL_TRAIN_ON, t + 0.5, e.station, train=nextTrain)) 
