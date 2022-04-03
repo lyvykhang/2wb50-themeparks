@@ -15,7 +15,7 @@ def dfToLatex(df, caption):
 
 def doRun(trains, cars):
     sim = Sim()
-    results = sim.sim(trains, cars)
+    results = sim.sim(trains, cars, extra=0)
     meanQLength = np.mean([qLength for station in results.qLengths for qLength in station])
     meanWaitTime = np.mean([waitTime for station in results.waitingTimes for waitTime in station])
     costs = (800*trains) + (sum(cars)*500)
@@ -40,7 +40,7 @@ def doRuns(N, trains, cars):
     
     for i in range(N):
         sim = Sim()
-        results = sim.sim(trains, cars)
+        results = sim.sim(trains, cars, extra=0)
         runsQLengths.append(results.qLengths)
         runsMeanQLengths.append([np.mean(subarray) for subarray in results.qLengths])
 
