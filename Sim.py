@@ -165,10 +165,10 @@ class Sim:
                     train.boarding = False;
                     qTrain[e.station].remove(train)
                     results.registerUnableToBoard(len(qCust[e.station])>0)
-                    
+                    fes.add(Event(Event.ARRIVAL_TRAIN_OFF, t + self.travelTimes[e.station], (e.station + 1) % 4, train=train))
+
                     if len(qTrain[e.station]) > 0: # there is another train waiting to offload at this station.
                         nextTrain = qTrain[e.station][0]
-                        fes.add(Event(Event.ARRIVAL_TRAIN_OFF, t + self.travelTimes[e.station], (e.station + 1) % 4, train=train))
 
                         off = [cust for cust in nextTrain.custs if cust.deptStation == e.station]
                         nextTrain.custs = [cust for cust in nextTrain.custs if cust not in off]
